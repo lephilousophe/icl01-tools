@@ -177,6 +177,7 @@ class ICL01Config:
 class Color:
     __slots__ = ('r', 'g', 'b')
     STRUCT = struct.Struct('<BBB')
+    size = 3
 
     def __init__(self, r, g, b):
         self.r = r
@@ -196,7 +197,7 @@ class Color:
         return (cls(*d) for d in cls.STRUCT.iter_unpack(data))
 
     def pack(self):
-        return cls.struct.pack(*self)
+        return self.STRUCT.pack(self.r, self.g, self.b)
     
     def pack_into(self, buffer, offset):
         cls.struct.pack_into(buffer, offset, *self)
@@ -1254,12 +1255,18 @@ def patchconfig(d):
         d.write_global_config(c, profile=0)
         
 def live_colors_snake(d):
-    tmp = list(colors[0])
-    for i in range(126):
-        d.write_computer_colors(tmp)
-        time.sleep(0.01)
-        item = tmp.pop(0)
-        tmp.append(item)
+    sz = d.read_capabilities().map_size
+    colors = [Color(0xff, 0, 0)] * sz
+    colors[0] = Color(0xff, 0xff, 0xff)
+    try:
+        while True:
+            for i in range(sz):
+                d.write_computer_colors(colors)
+                time.sleep(0.01)
+                item = colors.pop()
+                colors.insert(0, item)
+    except KeyboardInterrupt:
+        pass
     d.cancel_computer_colors()
     
 def live_colors_test(d):
@@ -1293,7 +1300,7 @@ for d in enumerate_icl01():
 
     #patchconfig(d)
 
-    #live_computer_colors_snake(d)
+    #live_colors_snake(d)
 
     #live_colors_test(d)
 
