@@ -89,7 +89,36 @@ class ICL01LightInfo:
     STRUCT = struct.Struct('<BBBBBBBB')
     size = 8
 
-    def __init__(self, light, speed, fx, multicolor, r, g, b):
+    COLOR_MODES = {
+        0: "Four-color Respiration (hidden)",
+        1: "Go with the stream",
+        2: "Clouds fly",
+        3: "Winding paths",
+        4: "Spectrum",
+        5: "Breath",
+        6: "Normal",
+        7: "Pass without trace",
+        8: "Ripples",
+        9: "Stream",
+        10: "Stars",
+        11: "Flowers",
+        12: "Swift action",
+        13: "Hurricane",
+        14: "Cartoon",
+        15: "Digital Times",
+        16: "Both ways",
+        17: "Surmount",
+        18: "Speed",
+        19: "Four-color color flashing (hidden)",
+        20: "Custom",
+        21: " (hidden)",
+        22: "Blink (hidden)",
+        23: "Radar (hidden)",
+        24: "Off (hidden)",
+    }
+
+    def __init__(self, selectItem, light, speed, fx, multicolor, r, g, b):
+        self.selectItem = selectItem
         self.light = light
         self.speed = speed
         self.fx = fx
@@ -100,7 +129,7 @@ class ICL01LightInfo:
 
     @classmethod
     def unpack_from(cls, buffer, offset = 0):
-        return cls(*cls.STRUCT.unpack_unpack_from(buffer, offset))
+        return cls(*cls.STRUCT.unpack_from(buffer, offset))
 
     @classmethod
     def unpack(cls, data):
@@ -111,11 +140,18 @@ class ICL01LightInfo:
         return (cls(*d) for d in cls.STRUCT.iter_unpack(data))
 
     def pack(self):
-        return cls.struct.pack(*self)
+        return self.STRUCT.pack(self.selectItem, self.light, self.speed, self.fx, self.multicolor, self.r, self.g, self.b)
     
     def pack_into(self, buffer, offset):
-        cls.struct.pack_into(buffer, offset, *self)
+        self.STRUCT.pack_into(buffer, offset, self.selectItem, self.light, self.speed, self.fx, self.multicolor, self.r, self.g, self.b)
 
+    def __str__(self):
+        return "{}: brightness: {}, speed: {}, FX: {}, multicolor: {}, color: #{:02x}{:02x}{:02x}".format(
+                self.COLOR_MODES.get(self.selectItem, str(self.selectItem)), self.light, self.speed, self.fx, self.multicolor, self.r, self.g, self.b)
+
+    def __repr__(self):
+        return "{}({}, {}, {}, {}, {}, 0x{:02x}, 0x{:02x}, 0x{:02x})".format(
+                self.__class__.__name__, self.selectItem, self.light, self.speed, self.fx, self.multicolor, self.r, self.g, self.b)
 
 class ICL01Config:
     __slots__ = ('board', 'coloroffset', 'zzccledmode', 'wflag', 'key6flag', 'winflag', 'pollingRate', 'scandelay', 'customcolors_group', 'logo', 'logo_on', 'st')
@@ -162,7 +198,7 @@ class ICL01Config:
     def pack_into(self, buffer, offset):
         data = memoryview(buffer)[offset:offset+self.size]
         self.board.pack_into(data, 1)
-        cls.STRUCTS[0].pack_into(data, 9, self.coloroffset, self.zzccledmode, self.wflag,
+        self.STRUCTS[0].pack_into(data, 9, self.coloroffset, self.zzccledmode, self.wflag,
                 self.key6flag, self.winflag, self.pollingRate, self.scandelay,
                 self.customcolors_group)
         self.logo.pack_into(data, 27)
@@ -173,6 +209,28 @@ class ICL01Config:
         data = bytearray(0x40)
         self.pack_into(data, 0)
         return data
+
+    def __str__(self):
+        ret = ""
+        ret += "Board: {!s}\n".format(self.board)
+        ret += "Color offset: {}\n".format(self.coloroffset)
+        ret += "Color mode: {}\n".format(self.zzccledmode)
+        ret += "Custom color group: {}\n".format(self.customcolors_group)
+        ret += "WASD mode: {}\n".format(self.wflag)
+        ret += "Full-key rollover: {}\n".format(self.key6flag)
+        ret += "Game mode: {}\n".format(self.winflag)
+        ret += "Polling rate: {}\n".format(self.pollingRate)
+        ret += "Scan delay: {}\n".format(self.scandelay)
+        ret += "Logo ({}): {!s}\n".format("on" if self.logo_on else "off", self.logo)
+        ret += "Surround: {!s}\n".format(self.st)
+
+        return ret
+
+    def __repr__(self):
+        return "{}({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})".format(self.__class__.__name__,
+            self.board, self.coloroffset, self.zzccledmode, self.wflag, self.key6flag,
+            self.winflag, self.pollingRate, self.scandelay, self.customcolors_group,
+            self.logo, self.logo_on, self.st)
 
 class Color:
     __slots__ = ('r', 'g', 'b')
@@ -200,7 +258,13 @@ class Color:
         return self.STRUCT.pack(self.r, self.g, self.b)
     
     def pack_into(self, buffer, offset):
-        cls.struct.pack_into(buffer, offset, *self)
+        self.STRUCT.pack_into(buffer, offset, self.r, self.g, self.b)
+
+    def __str__(self):
+        return "#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
+
+    def __repr__(self):
+        return "{}(0x{:02x}, 0x{:02x}, 0x{:02x})".format(self.__class__.__name__, self.r, self.g, self.b)
 
 class Action:
     __slots__ = ('type', )
