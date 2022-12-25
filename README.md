@@ -27,3 +27,11 @@ Module can be built using the following commands:
 * make clean
 * make
 * sudo make install
+
+Additionally, the module can be installed using DKMS:
+
+* sudo dkms add hid-evision
+* sudo dkms build -m hid-evision/0.1
+* sudo dkms install -m hid-evision/0.1
+
+Once these commands are executed, the module will get recompiled at every kernel update.
