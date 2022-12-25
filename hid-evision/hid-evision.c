@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
- *  HID driver for Evision devices
- *  For now, only ignore ignore bogus consumer reports
+ *  HID driver for EVision devices
+ *  For now, only ignore bogus consumer reports
  *  sent after the keyboard has been configured
  *
- *  Copyright (c) 2022 Le Philousophe
+ *  Copyright (c) 2022 Philippe Valembois
  */
 
 #include <linux/device.h>
@@ -25,14 +25,16 @@ static int evision_input_mapping(struct hid_device *hdev, struct hid_input *hi,
 		return 0;
 
 	// Ignore key down event
-	if ((usage->hid & HID_USAGE) >> 8 == 0x05) {
+	if ((usage->hid & HID_USAGE) >> 8 == 0x05)
 		return -1;
-	}
-	if ((usage->hid & HID_USAGE) >> 8 == 0x06) {
+	// Ignore key up event
+	if ((usage->hid & HID_USAGE) >> 8 == 0x06)
 		return -1;
-	}
+
 	switch (usage->hid & HID_USAGE) {
+	// Ignore configuration saved event
 	case 0x0401: return -1;
+	// Ignore reset event
 	case 0x0402: return -1;
 	}
 	return 0;
@@ -47,13 +49,13 @@ static int evision_probe(struct hid_device *hdev, const struct hid_device_id *id
 
 	ret = hid_parse(hdev);
 	if (ret) {
-		hid_err(hdev, "Evision hid parse failed: %d\n", ret);
+		hid_err(hdev, "EVision hid parse failed: %d\n", ret);
 		return ret;
 	}
 
 	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 	if (ret) {
-		hid_err(hdev, "Evision hw start failed: %d\n", ret);
+		hid_err(hdev, "EVision hw start failed: %d\n", ret);
 		return ret;
 	}
 
